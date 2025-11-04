@@ -31,12 +31,17 @@ public class Main {
         try (Connection conn = temp) 
         {
             introMessage();
-            int interfaceNum = chooseInterface();
+            int interfaceNum = -1;
 
-            if(interfaceNum == 1)
+            while(interfaceNum != 4)
             {
-                customerInterface(conn);
+                interfaceNum = chooseInterface();
+                if(interfaceNum == 1)
+                {
+                    customerInterface(conn);
+                }
             }
+            
             
         }
         catch (SQLException e) 
@@ -72,6 +77,7 @@ public class Main {
             "The Manager Interface",
             "Exit"
         };
+
         StringBuilder prompt = chooseFromOptions("Please enter a number to choose one of the following options", mainOptions);
         return getIntInRange(prompt,1,4);
 
@@ -92,21 +98,18 @@ public class Main {
             "Go Back"
         };
 
-
-        StringBuilder prompt = chooseFromOptions("Please select a number to choose the group you belong to", mainOptions);
-
-        int choiceOfCustomerInterface = getIntInRange(prompt, 1,5);
-
-        if(choiceOfCustomerInterface == 1)
+        int choiceOfCustomerInterface = -1;
+        while(choiceOfCustomerInterface != 5)
         {
-            individualInterface(conn);
+            StringBuilder prompt = chooseFromOptions("Please select a number to choose the group you belong to", mainOptions);
+
+            choiceOfCustomerInterface = getIntInRange(prompt, 1,5);
+
+            if(choiceOfCustomerInterface == 1)
+            {
+                individualInterface(conn);
+            }
         }
-
-
-
-
-
-
 
        
     }
@@ -129,34 +132,38 @@ public class Main {
             "See Purchases",
             "See Financing History",
             "See Total Expenses",
-            "Exit"
+            "Go Back"
         };
 
-        StringBuilder promptForAccount = chooseFromOptions("Please select one of the following options", accountOptions);
-        int choiceOfCustomerInterface = getIntInRange(promptForAccount, 1,6);
+        StringBuilder promptForAccount = chooseFromOptions("\nPlease select one of the following options", accountOptions);
+        
 
-        switch(choiceOfCustomerInterface)
+        int choiceOfCustomerInterface = -1;
+        while(choiceOfCustomerInterface != 6)
         {
-            case 1:
-                getCustomerPaymentMethods(customerID,conn, true);
-                break;
-            case 2:
-                //createPaymentMethod(customerID, 1);
-                break;
-            case 3:
-                //seePurchaseHistory(customerID, 1);
-                break;
-            case 4:
-                //seeFinancingHistory(customerID);
-                break;
-            case 5:
-                //seeTotalExpenses(customerID, 1);
-                break;
-            case 6:
-                //TO DO IMPLEMENT LOOPING LOGIC 
-                break;
-        }
+            choiceOfCustomerInterface = getIntInRange(promptForAccount, 1,6);
 
+            switch(choiceOfCustomerInterface)
+            {
+                case 1:
+                    getCustomerPaymentMethods(customerID,conn, true);
+                    break;
+                case 2:
+                    addCustomerPaymentMethods(customerID, conn, true);
+                    break;
+                case 3:
+                    //seePurchaseHistory(customerID, 1);
+                    break;
+                case 4:
+                    //seeFinancingHistory(customerID);
+                    break;
+                case 5:
+                    //seeTotalExpenses(customerID, 1);
+                    break;
+                case 6:
+                    break;
+            }
+        }
 
 
     }
@@ -257,12 +264,12 @@ public class Main {
         return null;
     }
 
-    public static void getCustomerPaymentMethods(int userId,Connection conn, boolean isCustomer)
+    public static void getCustomerPaymentMethods(int userId,Connection conn, boolean isInd)
     {
-        if(isCustomer)
+        if(isInd)
         {
 
-            System.out.println("\n------------Customer Payment Information------------");
+            System.out.println("\n------------------------Customer Payment Information------------------------");
             String creditCardQuery = "WITH payments AS (SELECT * from payment where user_id = ?) SELECT * from credit_card where pay_id in (SELECT pay_id from payments)";
 
             String bankAccountQuery = "WITH payments AS (SELECT * from payment where user_id = ?) SELECT * from bank_account where pay_id in (SELECT pay_id from payments)";
@@ -277,12 +284,12 @@ public class Main {
                 {
                     if(!rs.next())
                     {
-                        System.out.println("\n------------Credit Cards on File------------");
+                        System.out.println("\n------------------------Credit Cards on File------------------------");
                         System.out.println("No Credit Cards on File");
                     }
                     else
                     {
-                        System.out.println("\n------------Credit Cards on File------------");
+                        System.out.println("\n------------------------Credit Cards on File------------------------");
                         System.out.println(String.format("%-4s%-20s%-12s%-40s", "No.", "Card Number", "Exp. Date", "Billing Address"));
                         int i = 1;
                         do {
@@ -315,10 +322,10 @@ public class Main {
 
                 try(ResultSet rs = bankInformation.executeQuery())
                 {
-                    System.out.println("\n------------Bank Accounts on File------------");
+                    System.out.println("\n------------------------Bank Accounts on File------------------------");
                     if(!rs.next())
                     {
-                        System.out.println("No Bank Accounts on File");
+                        System.out.println("No Bank Accounts on File\n");
                     }
                     else
                     {
@@ -347,9 +354,174 @@ public class Main {
             }
         }
     }
+
+    public static void addCustomerPaymentMethods(int userId, Connection conn, boolean isInd)
+    {
+        if(isInd)
+        {
+             String[] paymentOptions =
+            {
+                "Add Credit Card",
+                "Add Bank Account",
+                "Go Back"
+            };
+
+
+            StringBuilder prompt = chooseFromOptions("Please select what you would like to add ", paymentOptions);
+
+            int choiceOfCustomerInterface = -1;
+
+            while(choiceOfCustomerInterface != 3)
+            {
+                choiceOfCustomerInterface = getIntInRange(prompt, 1,3);
+                if(choiceOfCustomerInterface == 1)
+                {
+                    addCustomerCreditCard(userId, conn, isInd);
+                }
+                else
+                {
+                    addCustomerBankAccount( userId, conn,isInd);
+                }
+            }
+           
+
+
+
+        }
+    }
+
+    public static void addCustomerCreditCard(int userId, Connection conn, boolean isInd)
+    {
+        try
+        {
+            conn.setAutoCommit(false);
+
+            String sql1 = "INSERT INTO Payment(user_id) VALUES (?)";
+            try(PreparedStatement paymentInsert = conn.prepareStatement(sql1))
+            {
+                paymentInsert.setInt(1,userId);
+                paymentInsert.executeUpdate();
+            }
+            
+            String sql2 = "SELECT MAX(pay_id) from payment where user_id = ?";
+            int pay_id = -1;
+            try(PreparedStatement payIdQuery = conn.prepareStatement(sql2))
+            {
+                payIdQuery.setInt(1, userId);
+                try(ResultSet rs = payIdQuery.executeQuery())
+                {
+                    if(rs.next())
+                    {
+                        pay_id = rs.getInt(1);
+                    }
+                }
+            }
+
+            String sql3 = "INSERT INTO Credit_Card (pay_id, card_number, expiration_date, cv, billing_address) VALUES (?, ?, ?, ?, ?)";
+            String[] cardInfo = getCreditCardInput();
+            java.sql.Date expDate = java.sql.Date.valueOf(cardInfo[1]);
+
+            try(PreparedStatement cardInsert = conn.prepareStatement(sql3))
+            {
+                cardInsert.setInt(1, pay_id);
+                cardInsert.setString(2, cardInfo[0]);
+                cardInsert.setDate(3, expDate);
+                cardInsert.setString(4, cardInfo[2]);
+                cardInsert.setString(5, cardInfo[3]);
+                cardInsert.executeUpdate();
+            }
+
+            conn.commit();
+            System.out.println("Credit card added successfully!");
+        }
+        catch (SQLException e)
+        {
+            try 
+            {
+                conn.rollback(); 
+            } 
+            catch (SQLException ex) 
+            {
+                //Nothing to do but fail here but this should happen 
+            }
+            System.out.println("Error adding credit card: " + e.getMessage());
+        }
+        finally
+        {
+            try 
+            {
+                conn.setAutoCommit(true); 
+            } 
+            catch (SQLException ex) 
+            {
+
+            }
+        }
+    }
+
+    public static String[] getCreditCardInput()
+    {
+        String cardNumber;
+        while(true)
+        {
+            System.out.print("Enter credit card number (Must be 13-19 digits) (If you want to just copy and paste one use 1234567890123)");
+            cardNumber = scan.nextLine().trim();
+            if (cardNumber.matches("\\d{13,19}"))
+            {
+                break;
+            }
+            System.out.println("Invalid card number. Must be 13-19 digits.");
+        }
+
+        String expirationDate;
+        while(true)
+        {
+            System.out.print("Enter expiration date (YYYY-MM-DD):");
+             expirationDate = scan.nextLine().trim();
+            if (expirationDate.matches("\\d{4}-\\d{2}-\\d{2}")) 
+            {
+                break;
+            }
+            System.out.println("Invalid date format. Use YYYY-MM-DD.");
+        }
+
+        String cv;
+        while (true) 
+        {
+            System.out.print("Enter CV (3 or 4 digits): ");
+            cv = scan.nextLine().trim();
+
+            if (cv.matches("\\d{3,4}")) 
+            {
+                break;
+            }
+            System.out.println("Invalid CVV. Must be 3 or 4 digits.");
+        }
+
+        String billingAddress;
+        while (true) 
+        {
+            System.out.print("Enter billing address: ");
+            billingAddress = scan.nextLine().trim();
+            if (!billingAddress.isEmpty()) 
+            {
+                break;
+            }
+            System.out.println("Billing address cannot be empty.");
+        }
+
+        return new String[] { cardNumber, expirationDate, cv, billingAddress };
+
+    }
+
+
+    public static void addCustomerBankAccount(int userId, Connection conn, boolean isInd)
+    {
+
+    }
     
 
-    //Helper Functions
+    //Helper Functions 
 
     //Prompts a user for an integer and asks until they give an integer in the valid range.
     public static int getIntInRange(StringBuilder prompt, int min, int max) 
@@ -388,9 +560,5 @@ public class Main {
         return menu;
     }
 
-
-
-
-    
 }
 
