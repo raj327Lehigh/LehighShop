@@ -1,0 +1,3 @@
+javac -cp ".:ojdbc11.jar" Main.java
+
+java -cp ".:ojdbc11.jar" Main
