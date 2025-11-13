@@ -41,8 +41,18 @@ public class Main {
                 {
                     customerInterface(conn);
                 }
+                else if(interfaceNum == 2)
+                {
+                    CatalogInterface.catalogInterface(conn);
+                }
+                else if(interfaceNum == 3)
+                {
+                    //TODO IMPLEMENT MANAGER INTERFACE 
+                }
             }
-            
+            // "The Catalog Interface",
+            // "The Manager Interface",
+            // "Exit"
             
         }
         catch (SQLException e) 
@@ -108,15 +118,15 @@ public class Main {
             }
             else if(choiceOfCustomerInterface == 2)
             {
-                //TODOD BusinessCustomer.businessInterface(conn);
+                BusinessCustomer.businessInterface(conn);
             }
             else if(choiceOfCustomerInterface == 3)
             {
-                // TODO CreateIndividualCustomer.individualCreation(conn);
+                CreateCustomers.createNewIndividualUser(conn);
             }
             else if(choiceOfCustomerInterface == 4)
             {
-                //TO DO CreateBusinessCustomer.businessCreation(conn);
+                CreateCustomers.createNewBusinessUser(conn);
             }
         }
 
