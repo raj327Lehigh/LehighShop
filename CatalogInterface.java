@@ -11,19 +11,16 @@ public class CatalogInterface
         while (catalogSelection != 4)
         {
             catalogSelection = catalogSelection();
-
             switch(catalogSelection)
             {
                 case 1:
-                    
-                    businessCatalog(conn);
+                    businessInterface(conn);
                     break;
                 case 2:
-                    individualCatalog(conn);
+                    customerInterface(conn);
                     break;
                 case 3:
-                    individualCatalog(conn);
-                    businessCatalog(conn);
+                    managerInterface(conn);
                     break;
             }
         }
@@ -42,6 +39,7 @@ public class CatalogInterface
         System.out.println(" \\___/ \\__\\___|_| |_| |_|___/  \\____/\\__,_|\\__\\__,_|_|\\___/ \\__, |");
         System.out.println("                                                             __/ |");
         System.out.println("                                                            |___/ ");
+
     }
     public static int catalogSelection()
     {
@@ -52,7 +50,7 @@ public class CatalogInterface
             "Go Back"
         };
 
-        StringBuilder prompt = Main.chooseFromOptions("Please enter a number to choose one of the following options", catalogOptions);
+        StringBuilder prompt = Main.chooseFromOptions("\nPlease enter a number to choose one of the following options", catalogOptions);
         int entry = Main.getIntInRange(prompt,1,4);
         return entry;
     }
@@ -69,8 +67,7 @@ public class CatalogInterface
 
                 while(rs.next())
                 {
-                    System.out.printf("%-30s $%-10.2f %-25s %15d%n",rs.getString("description"), rs.getDouble("price"), rs.getString("vendor"),rs.getInt("warranty_length")
-                    );
+                    System.out.printf("%-30s $%-10.2f %-25s %15d%n",rs.getString("description"), rs.getDouble("price"), rs.getString("vendor"),rs.getInt("warranty_length"));
                 }
             }   
             catch(SQLException ex)
@@ -86,6 +83,7 @@ public class CatalogInterface
 
     public static void businessCatalog(Connection conn)
     {
+        System.out.println();
         String statement = "SELECT description, price, vendor, duration * 60 as duration from service";
         try(PreparedStatement statementVal =  conn.prepareStatement(statement))
         {
@@ -110,17 +108,31 @@ public class CatalogInterface
         {
             System.out.println("Error executing business catalog gathering" +  ex.getMessage());
         }
+        System.out.println();
+
     }   
 
 
     public static void businessInterface(Connection conn)
     {
+        CustomerHelpers.currentUserList(conn, false); 
+        
+        int customerID = -1;
+        while(customerID == -1)
+        {
+            customerID = CustomerHelpers.signUserIn(conn, 2);
+        }
 
-        int customerID = CustomerHelpers.signUserIn(conn, 2);
+        System.out.println("______           _                       _____      _             __               ");
+        System.out.println("| ___ \\         (_)                     |_   _|    | |           / _|              ");
+        System.out.println("| |_/ /_   _ ___ _ _ __   ___  ___ ___    | | _ __ | |_ ___ _ __| |_ __ _  ___ ___ ");
+        System.out.println("| ___ \\ | | / __| | '_ \\ / _ \\/ __/ __|   | || '_ \\| __/ _ \\ '__|  _/ _` |/ __/ _ \\");
+        System.out.println("| |_/ / |_| \\__ \\ | | | |  __/\\__ \\__ \\  _| || | | | ||  __/ |  | || (_| | (_|  __/");
+        System.out.println("\\____/ \\__,_|___/_|_| |_|\\___||___/___/  \\___/_| |_|\\__\\___|_|  |_| \\__,_|\\___\\___|");
+        System.out.println("                                                                                   ");
+        System.out.println("                                                                                   ");
 
-        System.out.println("Welcome to the business Interface.");
-
-
+        System.out.println("\nWelcome to the Business Catalog Interface.");
 
         String[] catalogOptions = {
             "Make Purchase",
@@ -133,8 +145,8 @@ public class CatalogInterface
         
         while(entry != 3)
         {
-            entry = Main.getIntInRange(prompt,1,3);
-
+            entry = Main.getIntInRange(prompt, 1, 3);
+            
             switch(entry)
             {
                 case 1:
@@ -142,6 +154,7 @@ public class CatalogInterface
                     break;
                 case 2:
                     System.out.println("Services Catalog:\n");
+                    
                     businessCatalog(conn);
                     break;
             }
@@ -150,6 +163,7 @@ public class CatalogInterface
 
     public static void makeServicePurchase(Connection conn, int customerId)
     {
+        
         businessCatalog(conn);
         String prompt = "Please enter the FULL NAME of an item above:";
         String sqlQ = "SELECT product_id from service where description = ?";
@@ -160,7 +174,7 @@ public class CatalogInterface
         while(paymentId < 0)
         {
             CustomerHelpers.getCustomerPaymentMethods(customerId, conn, false);
-            paymentId = selectCustomerPaymentMethods(customerId, conn, false);
+            paymentId = selectCustomerPaymentMethods(customerId, conn, false, false);
         }
 
         java.sql.Date today = new java.sql.Date(System.currentTimeMillis());
@@ -176,56 +190,22 @@ public class CatalogInterface
             insertionToTrans.setInt(4, customerId);
 
             insertionToTrans.executeUpdate();
+            System.out.println("  _______ _                 _     __     __         ");
+            System.out.println(" |__   __| |               | |    \\ \\   / /         ");
+            System.out.println("    | |  | |__   __ _ _ __ | | __  \\ \\_/ /__  _   _ ");
+            System.out.println("    | |  | '_ \\ / _` | '_ \\| |/ /   \\   / _ \\| | | |");
+            System.out.println("    | |  | | | | (_| | | | |   <     | | (_) | |_| |");
+            System.out.println("    |_|  |_| |_|\\__,_|_| |_|_|\\_\\    |_|\\___/ \\__,_|");
+
+            System.out.println("\n\nThank you for your purchase! What would you like to do next?\n");
 
         }
         catch(SQLException e)
         {
-            System.out.println("Error Inserting transaction");
+            System.out.println("Error Inserting transaction: " + e.getMessage());
         }
 
     }
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 public static int getBankIdFromUser() 
@@ -233,7 +213,7 @@ public static int getBankIdFromUser()
     int bankId = -1;
     while (true) 
     {
-        System.out.print("Please enter your Bank ID: ");
+        System.out.print("\nPlease enter the pay_id you would like to use: ");
         String input = scan.nextLine().trim();
         try 
         {
@@ -244,112 +224,195 @@ public static int getBankIdFromUser()
             } 
             else 
             {
-                System.out.println("Bank ID must be a positive integer.");
+                System.out.println("pay_id must be a positive integer.");
             }
         } 
         catch (NumberFormatException e)
         {
-            System.out.println("Invalid input. Please enter a valid integer Bank ID.");
+            System.out.println("Invalid input. Please enter a valid integer pay_id.");
         }
     }
     return bankId;
 }
 
 
+public static void managerInterface(Connection conn)
+{
+    CustomerHelpers.currentManagerList(conn);
+
+    int customerId = -1;
+    while(customerId == -1)
+    {
+        customerId = CustomerHelpers.signUserIn(conn,3);
+    }
+
+    System.out.println("___  ___                                    _____       _        _             ");
+    System.out.println("|  \\/  |                                   /  __ \\     | |      | |            ");
+    System.out.println("| .  . | __ _ _ __   __ _  __ _  ___ _ __  | /  \\/ __ _| |_ __ _| | ___   __ _ ");
+    System.out.println("| |\\/| |/ _` | '_ \\ / _` |/ _` |/ _ \\ '__| | |    / _` | __/ _` | |/ _ \\ / _` |");
+    System.out.println("| |  | | (_| | | | | (_| | (_| |  __/ |    | \\__/\\ (_| | || (_| | | (_) | (_| |");
+    System.out.println("\\_|  |_/\\__,_|_| |_|\\__,_|\\__, |\\___|_|     \\____/\\__,_|\\__\\__,_|_|\\___/ \\__, |");
+    System.out.println("                           __/ |                                          __/ |");
+    System.out.println("                          |___/                                          |___/ ");
+
+    System.out.println("\nWelcome to the Manager Catalog Interface.");
+
+    String[] catalogOptions = {
+        "Add Item",
+        "Remove Item",
+        "Surf Catalog",
+        "Go Back"
+    };
+
+    StringBuilder prompt = Main.chooseFromOptions("\nPlease enter a number to choose one of the following options", catalogOptions);
+    int entry = -1;
+    
+    while(entry != 4)
+    {
+        entry = Main.getIntInRange(prompt, 1, 4);
+        
+        switch(entry)
+        {
+            case 1:
+                addItem(conn);
+                break;
+            case 2:
+                removeItem(conn);
+                break;
+            case 3:
+                showManagerItems(conn);
+                break;
+        }
+    }
+
+}
+
+public static void customerInterface(Connection conn)
+{
+    CustomerHelpers.currentUserList(conn, true); 
+        
+    int customerID = -1;
+    while(customerID == -1)
+    {
+        customerID = CustomerHelpers.signUserIn(conn, 1);
+    }
+
+    
+    System.out.println(" _____           _                              _____       _        _              ");
+    System.out.println("/  __ \\         | |                            /  __ \\     | |      | |             ");
+    System.out.println("| /  \\/_   _ ___| |_ ___  _ __ ___   ___ _ __  | /  \\/ __ _| |_ __ _| | ___   __ _  ");
+    System.out.println("| |   | | | / __| __/ _ \\| '_ ` _ \\ / _ \\ '__| | |    / _` | __/ _` | |/ _ \\ / _` | ");
+    System.out.println("| \\__/\\ |_| \\__ \\ || (_) | | | | | |  __/ |    | \\__/\\ (_| | || (_| | | (_) | (_| | ");
+    System.out.println(" \\____/\\__,_|___/\\__\\___/|_| |_| |_|\\___|_|     \\____/\\__,_|\\__\\__,_|_|\\___/ \\__, | ");
+    System.out.println("                                                                              __/ |  ");
+    System.out.println("                                                                             |___/   ");
+
+    System.out.println("\nWelcome to the Customer Catalog Interface.");
+
+    String[] catalogOptions = {
+        "Make Unfinanced Purchase",
+        "Make Financed Purchase",
+        "Surf Catalog",
+        "Go Back"
+    };
+
+    StringBuilder prompt = Main.chooseFromOptions("\nPlease enter a number to choose one of the following options", catalogOptions);
+    int entry = -1;
+    
+    while(entry != 4)
+    {
+        entry = Main.getIntInRange(prompt, 1, 4);
+        
+        switch(entry)
+        {
+            case 1:
+                makeUnfinancedPurchase(conn, customerID);
+                break;
+            case 2:
+                makeFinancedPurchase(conn, customerID);
+                break;
+            case 3:
+                System.out.println("Customer Catalog:\n");
+                individualCatalog(conn);
+                break;
+        }
+    }
+}
 
 
-public static int selectCustomerPaymentMethods(int userId,Connection conn, boolean isInd)
+public static int selectCustomerPaymentMethods(int userId,Connection conn, boolean isInd, boolean isFinanced)
 {
         if(isInd)
         {
+            if(!isFinanced)
+            {
+                String bankAccountSelectionQuery = "WITH payments AS (SELECT * from payment where user_id = ?) SELECT * from bank_account where pay_id in (SELECT pay_id from payments) and pay_id = ?";
+                String creditCardSelectionQuery = "WITH payments AS (SELECT * from payment where user_id = ?) SELECT * from credit_card where pay_id in (SELECT pay_id from payments) and pay_id = ?";
 
+                try(PreparedStatement creditInformation = conn.prepareStatement(creditCardSelectionQuery);
+                    PreparedStatement bankInformation = conn.prepareStatement(bankAccountSelectionQuery);)
+
+                {
+                    creditInformation.setInt(1, userId);
+                    bankInformation.setInt(1, userId);
+                    
+
+                    int pay_id = getBankIdFromUser();
+                    boolean isPresent = false;
+                    boolean isCredit = false;
+
+                    creditInformation.setInt(2, pay_id);
+                    bankInformation.setInt(2, pay_id);
+
+                    try(ResultSet rs = creditInformation.executeQuery())
+                    {
+                        if(rs.next())
+                        {
+                            isPresent = true;
+                            return pay_id;
+                        }
+                    }
+                    catch(SQLException e)
+                    {
+                        System.out.println("Error getting information about credit cards in sql" + e.getMessage());
+                        System.exit(-1);
+                    }
+
+                    try(ResultSet rs = bankInformation.executeQuery())
+                    {
+                        if(rs.next())
+                        {
+                            isPresent = true;
+                            return pay_id;
+                        }
+                    }
+                    catch(SQLException e)
+                    {
+                        System.out.println("Error getting information about bank accounts in sql: " + e.getMessage());
+                        System.exit(-1);
+                    }
+
+                    if(!isPresent)
+                    {
+                        System.out.println("Error: you do not on a bank account or credit card with that pay_id. Please try again.");
+                        return -1;
+                    }
+
+
+                }
+                catch(SQLException e)
+                {
+                    System.out.println("Unexpected SQL Error in getting Customer Payments: " + e.getMessage());
+                    System.exit(-1);
+                }
+            }
+            else
+            {
+
+            }
+            
         }
-        // {
-
-        //     System.out.println("\n------------------------Customer Payment Information------------------------");
-        //     String creditCardQuery = "WITH payments AS (SELECT * from payment where user_id = ?) SELECT * from credit_card where pay_id in (SELECT pay_id from payments)";
-
-        //     String bankAccountQuery = "WITH payments AS (SELECT * from payment where user_id = ?) SELECT * from bank_account where pay_id in (SELECT pay_id from payments)";
-        //     try(PreparedStatement creditInformation = conn.prepareStatement(creditCardQuery);
-        //         PreparedStatement bankInformation = conn.prepareStatement(bankAccountQuery);)
-
-        //     {
-        //         creditInformation.setInt(1, userId);
-        //         bankInformation.setInt(1, userId);
-
-        //         try(ResultSet rs = creditInformation.executeQuery())
-        //         {
-        //             if(!rs.next())
-        //             {
-        //                 System.out.println("\n------------------------Credit Cards on File------------------------");
-        //                 System.out.println("No Credit Cards on File");
-        //             }
-        //             else
-        //             {
-        //                 System.out.println("\n------------------------Credit Cards on File------------------------");
-        //                 System.out.println(String.format("%-4s%-20s%-12s%-40s", "No.", "Card Number", "Exp. Date", "Billing Address"));
-        //                 int i = 1;
-        //                 do {
-        //                     String cardNumber = rs.getString("card_number");
-        //                     String expiry = rs.getString("expiration_date");
-        //                     String billing_address = rs.getString("billing_address");
-
-        //                     //Format expiry as MM/YYYY
-        //                     String formattedExpiry = expiry;
-        //                     if (expiry != null && expiry.length() >= 7) {
-        //                         //Extract year and month from format YYYY-MM-DD
-        //                         String year = expiry.substring(0, 4);
-        //                         String month = expiry.substring(5, 7);
-        //                         formattedExpiry = month + "/" + year;
-        //                     }
-
-        //                     // Add spaces after commas in billing address
-        //                     String formattedAddress = billing_address.replaceAll(",", ", ");
-
-        //                     System.out.println(String.format("%-4s%-20s%-12s%-40s", i + ".", cardNumber, formattedExpiry, formattedAddress));
-        //                     i++;
-        //                 } while(rs.next());
-        //             }
-        //         }
-        //         catch(SQLException e)
-        //         {
-        //             System.out.println("Error getting information about credit cards in sql");
-        //             System.exit(-1);
-        //         }
-
-        //         try(ResultSet rs = bankInformation.executeQuery())
-        //         {
-        //             System.out.println("\n------------------------Bank Accounts on File------------------------");
-        //             if(!rs.next())
-        //             {
-        //                 System.out.println("No Bank Accounts on File\n");
-        //             }
-        //             else
-        //             {
-        //                 System.out.println(String.format("%-4s%-20s%-20s%-20s", "No.", "Account Number", "Bank", "Routing Number"));
-        //                 int i = 1;
-        //                 do {
-        //                     String accountNumber = rs.getString("account_number");
-        //                     String bankName = rs.getString("bank");
-        //                     String routingNumber = rs.getString("routing_number");
-        //                     System.out.println(String.format("%-4s%-20s%-20s%-20s", i + ".", accountNumber, bankName, routingNumber));
-        //                     i++;
-        //                 } while(rs.next());
-        //             }
-        //         }
-        //         catch(SQLException e)
-        //         {
-        //             System.out.println("Error getting information about bank accounts in sql");
-        //             System.exit(-1);
-        //         }
-
-        //     }
-        //     catch(SQLException e)
-        //     {
-        //         System.out.println("Unexpected SQL Error in getting Customer Payments");
-        //         System.exit(-1);
-        //     }
-        // }
+        
         else
         {
 
@@ -366,7 +429,7 @@ public static int selectCustomerPaymentMethods(int userId,Connection conn, boole
                 {
                     if(!rs.next())
                     {
-                        System.out.println("Error: You do not own that bank account. Please try Again");
+                        System.out.println("\n\nError: You do not own that bank account. Please try Again");
                         return -1;
                     }
                     else
@@ -376,14 +439,14 @@ public static int selectCustomerPaymentMethods(int userId,Connection conn, boole
                 }
                 catch(SQLException e)
                 {
-                    System.out.println("Error getting information about bank accounts in sql");
+                    System.out.println("Error getting information about bank accounts in sql: " + e.getMessage() );
                     System.exit(-1);
                 }
 
             }
             catch(SQLException e)
             {
-                System.out.println("Unexpected SQL Error in getting Customer Payments");
+                System.out.println("Unexpected SQL Error in getting Customer Payments: " + e.getMessage());
                 System.exit(-1);
             }            
         }
@@ -395,7 +458,7 @@ public static int selectCustomerPaymentMethods(int userId,Connection conn, boole
 
     public static int getItemId(String prompt, Connection conn, String sql, String type)
     {
-        System.out.println(prompt);
+        System.out.print(prompt);
         String userInput = scan.nextLine();
 
         try(PreparedStatement pstat = conn.prepareStatement(sql);)
@@ -419,9 +482,574 @@ public static int selectCustomerPaymentMethods(int userId,Connection conn, boole
         }
         catch(SQLException e)
         {
-            System.out.println("Error Developing SQL prepared Statement, please try again");
+            System.out.println("Error Developing SQL prepared Statement, please try again 2: " + e.getMessage());
             return -1;
         }
     }
-    
+
+    public static void makeUnfinancedPurchase(Connection conn, int customerId)
+    {
+        individualCatalog(conn);
+        String prompt = "Please enter the FULL NAME of an item above:";
+        String sqlQ = "SELECT product_id from item where description = ?";
+        int productId = getItemId(prompt, conn, sqlQ, "item");
+
+        int paymentId = -1;
+        
+        while(paymentId < 0)
+        {
+            CustomerHelpers.getCustomerPaymentMethods(customerId, conn, true);
+            paymentId = selectCustomerPaymentMethods(customerId, conn, true, false);
+        }
+
+        java.sql.Date today = new java.sql.Date(System.currentTimeMillis());
+        
+
+
+        String insertSql = "INSERT INTO Unfinanced_Transaction (date_of_delivery, settled_on, customer_id, pay_id, product_id) VALUES (?,?,?,?,?)";
+
+        try(PreparedStatement insertionToTrans = conn.prepareStatement(insertSql);)
+        {
+            insertionToTrans.setDate(1, today);
+            insertionToTrans.setDate(2,today);
+            insertionToTrans.setInt(4, paymentId);
+            insertionToTrans.setInt(5, productId);
+            insertionToTrans.setInt(3, customerId);
+
+            insertionToTrans.executeUpdate();
+            System.out.println("  _______ _                 _     __     __         ");
+            System.out.println(" |__   __| |               | |    \\ \\   / /         ");
+            System.out.println("    | |  | |__   __ _ _ __ | | __  \\ \\_/ /__  _   _ ");
+            System.out.println("    | |  | '_ \\ / _` | '_ \\| |/ /   \\   / _ \\| | | |");
+            System.out.println("    | |  | | | | (_| | | | |   <     | | (_) | |_| |");
+            System.out.println("    |_|  |_| |_|\\__,_|_| |_|_|\\_\\    |_|\\___/ \\__,_|");
+
+            System.out.println("\n\nThank you for your purchase! What would you like to do next?\n");
+
+        }
+        catch(SQLException e)
+        {
+            System.out.println("Error Inserting transaction: " + e.getMessage());
+        }
+    }
+
+
+
+
+    public static void makeFinancedPurchase(Connection conn, int customerId)
+    {
+        individualCatalog(conn);
+        String prompt = "Please enter the FULL NAME of an item above:";
+
+
+        String sqlQ = "SELECT product_id from item where description = ?";
+        int productId = getItemId(prompt, conn, sqlQ, "item");
+
+        java.sql.Date today = new java.sql.Date(System.currentTimeMillis());
+
+        prompt = "Please Enter the plan_id for the plan you would like to use:";
+        String type = "Plan";
+        String sql = "SELECT * from financing where plan_id = ?";
+        
+        int planId = -1; 
+        while(planId < 0)
+        {
+            planId = getPlan(prompt, conn, sql, type);
+        }
+        
+        
+        String interestRateQ = "SELECT interest_rate/100 as ir from financing where plan_id = ?";
+        String pricingQ = "SELECT price from item where product_id = ?";
+
+        double price = 0;
+        double interestRate = 0;
+        double principal = 0;
+
+        try(PreparedStatement irq = conn.prepareStatement(interestRateQ);
+            PreparedStatement pq = conn.prepareStatement(pricingQ);)
+        {
+            irq.setInt(1, planId);
+            pq.setInt(1, productId);
+            try(ResultSet rs = irq.executeQuery())
+            {
+                if(rs.next())
+                {
+                    interestRate = rs.getDouble("ir");
+                }
+                else 
+                {
+                    System.out.println("Error: No matching interest rate");
+                    System.exit(1);
+                }
+            }
+
+            try(ResultSet rs = pq.executeQuery())
+            {
+                if(rs.next())
+                {
+                    price = rs.getDouble("price");
+                }
+                else 
+                {
+                    System.out.println("Error: No matching interest rate");
+                    System.exit(1);
+                }
+            }
+
+            principal = price*interestRate + price;
+
+
+
+        }
+        catch(SQLException e)
+        {
+            System.out.println("Error Developing SQL prepared Statement, please try again 1: " + e.getMessage());
+            System.exit(-1);
+        }
+        
+        java.sql.Date today2 = new java.sql.Date(System.currentTimeMillis());
+
+
+        String insertSql = "INSERT INTO financed_Transaction VALUES (DEFAULT,?,?,?,?,?)";
+
+        try(PreparedStatement insertionToTrans = conn.prepareStatement(insertSql);)
+        {
+            insertionToTrans.setDate(1, today2);
+            insertionToTrans.setDouble(2, principal);
+            insertionToTrans.setInt(3, customerId);
+            insertionToTrans.setInt(4, productId);
+            insertionToTrans.setInt(5, planId);
+
+            insertionToTrans.executeUpdate();
+            System.out.println("  _______ _                 _     __     __         ");
+            System.out.println(" |__   __| |               | |    \\ \\   / /         ");
+            System.out.println("    | |  | |__   __ _ _ __ | | __  \\ \\_/ /__  _   _ ");
+            System.out.println("    | |  | '_ \\ / _` | '_ \\| |/ /   \\   / _ \\| | | |");
+            System.out.println("    | |  | | | | (_| | | | |   <     | | (_) | |_| |");
+            System.out.println("    |_|  |_| |_|\\__,_|_| |_|_|\\_\\    |_|\\___/ \\__,_|");
+
+            System.out.println("\n\nThank you for your purchase! What would you like to do next?\n");
+
+        }
+        catch(SQLException e)
+        {
+            System.out.println("Error Inserting transaction: " + e.getMessage());
+        }
+
+    }
+
+
+
+
+    public static int getPlan(String prompt, Connection conn, String sql, String type)
+    {
+        int planId = -1;
+        showPlans(conn);
+        System.out.print(prompt);
+        String input = scan.nextLine().trim();
+        try 
+        {
+            planId = Integer.parseInt(input);
+            if (planId > 0) 
+            {
+            } 
+            else 
+            {
+                System.out.println("Plan_id must be a positive integer.");
+            }
+        }
+        catch(NumberFormatException e)
+        {
+            System.out.println("Please enter an integer.");
+        }
+        
+
+        try(PreparedStatement pstat = conn.prepareStatement(sql);)
+        {
+            pstat.setInt(1, planId);
+            try(ResultSet rs = pstat.executeQuery())
+            {
+                if(rs.next())
+                {
+                    return planId;
+                }
+                else 
+                {
+                    System.out.println("Error: No matching " + type + " found");
+                    return -1;
+                }
+            }
+            catch(SQLException e)
+            {
+                System.out.println("Error Developing SQL prepared Statement, please try again 4: " + e.getMessage());
+                return -1;
+            }
+
+        }
+        catch(SQLException e)
+        {
+            System.out.println("Error Developing SQL prepared Statement, please try again 3: " + e.getMessage());
+            return -1;
+        }
+    }
+
+    public static void showPlans(Connection conn)
+    {
+        String planQuery = "SELECT * from financing";
+
+        try(PreparedStatement planQueryStmt = conn.prepareStatement(planQuery);)
+            {
+                try(ResultSet rs = planQueryStmt.executeQuery())
+                {
+                    System.out.println("\n\n------------------------------Financing Plans------------------------------\n");
+                    if(!rs.next())
+                    {
+                        System.out.println("There are no financing plans currently avaliable");
+                    }
+                    else
+                    {
+                        System.out.println(String.format("%-10s %-40s %-10s %-15s","Plan_id", "Contract", "Installments", "Interest Rates"));
+                        do
+                        {
+                            int plan_id = rs.getInt("Plan_id");
+                            String contract = rs.getString("Contract");
+                            int installments = rs.getInt("Number_installments");
+                            double interest_rate = rs.getDouble("interest_rate");
+                            
+
+                            System.out.println(String.format("%-10d %-40s %-10d %-12.2f", plan_id, contract, installments, interest_rate));
+                        } while(rs.next());
+                    }
+
+                }   
+                catch(SQLException e)
+                {
+                    System.out.println("Error Querying for financing plans");
+                }
+            }
+            catch(SQLException e)
+            {
+                System.out.println("Error Querying for financing plans");
+            }
+    }
+
+    public static void addItem(Connection conn)
+    {
+        int itemSelection = 0;
+        String[] catalogOptions = {
+                "Add Service",
+                "Add Item",
+                "Go Back"
+            };
+
+        StringBuilder prompt = Main.chooseFromOptions("\nPlease enter a number to choose one of the following options", catalogOptions);
+        
+        int entry = -1;
+        while(entry != 3)
+        {
+            entry = Main.getIntInRange(prompt,1,3);
+            switch(entry)
+            {
+                case 1:
+                    addService(conn);
+                    break;
+                case 2:
+                    addProduct(conn);
+                    break;
+                }
+ 
+        }
+
+    }
+
+    public static void addService(Connection conn)
+    {
+
+        String description;
+        while (true)
+        {
+            System.out.print("Please Enter the name of the service: ");
+            description = scan.nextLine().trim();
+            if (!description.isEmpty()) {
+                break;
+            }
+            System.out.println("Description cannot be empty.");
+        }
+
+        double price = -1;
+        while (price <= 0) 
+        {
+            System.out.print("Please Enter the price of your service: ");
+            String priceInput = scan.nextLine().trim();
+            try 
+            {
+                price = Double.parseDouble(priceInput);
+                if (price <= 0) 
+                {
+                    System.out.println("Price must be a positive number.");
+                }
+            } 
+            catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a valid number for price.");
+            }
+        }
+
+        String vendor;
+        while (true)
+        {
+            System.out.print("Please enter a vendor name: ");
+            vendor = scan.nextLine().trim();
+            if (!vendor.isEmpty())
+            {
+                break;
+            }
+            System.out.println("Vendor name cannot be empty.");
+        }
+
+        double duration = -1;
+        while (duration <= 0) 
+        {
+            System.out.print("Please Enter duration (in hours (if minutes enter as fraction of hour)): ");
+            String durationInput = scan.nextLine().trim();
+            try 
+            {
+                duration = Double.parseDouble(durationInput);
+                if (duration <= 0) 
+                {
+                    System.out.println("Duration must be a positive number.");
+                }
+            } 
+            catch (NumberFormatException e) 
+            {
+                System.out.println("Invalid input. Please enter a valid number for duration.");
+            }
+        }
+
+
+        String insertSql = "INSERT INTO Service (DESCRIPTION, PRICE, VENDOR, DURATION) VALUES (?,?,?,?)";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(insertSql)) 
+        {
+            pstmt.setString(1, description);
+            pstmt.setDouble(2, price);
+            pstmt.setString(3, vendor);
+            pstmt.setDouble(4, duration);
+
+            pstmt.executeUpdate();
+            
+            System.out.println("\n   _____                              ");
+            System.out.println("  / ____|                             ");
+            System.out.println(" | (___  _   _  ___ ___ ___  ___ ___  ");
+            System.out.println("  \\___ \\| | | |/ __/ __/ _ \\/ __/ __| ");
+            System.out.println("  ____) | |_| | (_| (_|  __/\\__ \\__ \\ ");
+            System.out.println(" |_____/ \\__,_|\\___\\___\\___||___/___/ ");
+            
+            System.out.println("\n\nService added successfully!\n");
+
+        } 
+        catch (SQLException e) 
+        {
+            System.out.println("Error adding service: " + e.getMessage());
+        }
+    }
+
+
+
+
+    public static void addProduct(Connection conn)
+    {
+
+        String description;
+        while (true)
+        {
+            System.out.print("Please Enter the name of the item: ");
+            description = scan.nextLine().trim();
+            if (!description.isEmpty()) 
+            {
+                break;
+            }
+            System.out.println("Name cannot be empty.");
+        }
+
+        double price = -1;
+        while (price <= 0) 
+        {
+            System.out.print("Please Enter the price of your item: ");
+            String priceInput = scan.nextLine().trim();
+            try 
+            {
+                price = Double.parseDouble(priceInput);
+                if (price <= 0) 
+                {
+                    System.out.println("Price must be a positive number.");
+                }
+            } 
+            catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a valid number for price.");
+            }
+        }
+
+        String vendor;
+        while (true)
+        {
+            System.out.print("Please enter a vendor name: ");
+            vendor = scan.nextLine().trim();
+            if (!vendor.isEmpty())
+            {
+                break;
+            }
+            System.out.println("Vendor name cannot be empty.");
+        }
+
+        double duration = -1;
+        while (duration <= 0) 
+        {
+            System.out.print("Please Enter Warranty Length in months: ");
+            String durationInput = scan.nextLine().trim();
+            try 
+            {
+                duration = Double.parseDouble(durationInput);
+                if (duration <= 0) 
+                {
+                    System.out.println("Warranty length must be a positive number.");
+                }
+            } 
+            catch (NumberFormatException e) 
+            {
+                System.out.println("Invalid input. Please enter a valid number for warranty length.");
+            }
+        }
+
+
+        String insertSql = "INSERT INTO Item (DESCRIPTION, PRICE, VENDOR, WARRANTY_LENGTH) VALUES (?,?,?,?)";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(insertSql)) 
+        {
+            pstmt.setString(1, description);
+            pstmt.setDouble(2, price);
+            pstmt.setString(3, vendor);
+            pstmt.setDouble(4, duration);
+
+            pstmt.executeUpdate();
+            
+            System.out.println("\n   _____                              ");
+            System.out.println("  / ____|                             ");
+            System.out.println(" | (___  _   _  ___ ___ ___  ___ ___  ");
+            System.out.println("  \\___ \\| | | |/ __/ __/ _ \\/ __/ __| ");
+            System.out.println("  ____) | |_| | (_| (_|  __/\\__ \\__ \\ ");
+            System.out.println(" |_____/ \\__,_|\\___\\___\\___||___/___/ ");
+            
+            System.out.println("\n\nItem added successfully!\n");
+
+        } 
+        catch (SQLException e) 
+        {
+            System.out.println("Error adding Item: " + e.getMessage());
+        }
+    }
+
+
+
+    public static void showManagerItems(Connection conn)
+    {
+        System.out.println();
+        System.out.println("------------------Items Currently Avaliable for Purchase by Individuals------------------");
+        individualCatalog(conn);
+
+        System.out.println();
+        System.out.println("------------------Services Currently Avaliable for Purchase by Businesses------------------");
+        businessCatalog(conn);
+    }
+
+    public static void removeItem(Connection conn)
+    {
+        showManagerItems(conn);
+        
+        boolean itemRemoved = false;
+        
+        while (!itemRemoved) {
+            System.out.print("\nPlease enter the FULL NAME of the item or service you would like to remove: ");
+            String itemName = scan.nextLine().trim();
+            
+            if (itemName.isEmpty()) 
+            {
+                System.out.println("Item name cannot be empty. Please try again.");
+                continue;
+            }
+            
+            //checking if the item is present
+            String checkItemSql = "SELECT product_id FROM item WHERE description = ?";
+            String checkServiceSql = "SELECT product_id FROM service WHERE description = ?";
+            
+            try (PreparedStatement itemStmt = conn.prepareStatement(checkItemSql);
+                 PreparedStatement serviceStmt = conn.prepareStatement(checkServiceSql)) 
+            {
+                
+                itemStmt.setString(1, itemName);
+                try (ResultSet rs = itemStmt.executeQuery()) 
+                {
+                    if (rs.next()) 
+                    {
+                        int productId = rs.getInt("product_id");
+                        String deleteSql = "DELETE FROM item WHERE product_id = ?";
+                        try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) 
+                        {
+                            deleteStmt.setInt(1, productId);
+                            deleteStmt.executeUpdate();
+                            
+                            System.out.println("\n  _____                                   _  ");
+                            System.out.println(" |  __ \\                                 | | ");
+                            System.out.println(" | |__) |___ _ __ ___   _____   _____  __| | ");
+                            System.out.println(" |  _  // _ \\ '_ ` _ \\ / _ \\ \\ / / _ \\/ _` | ");
+                            System.out.println(" | | \\ \\  __/ | | | | | (_) \\ V /  __/ (_| | ");
+                            System.out.println(" |_|  \\_\\___|_| |_| |_|\\___/ \\_/ \\___|\\__,_| ");
+                            System.out.println("\nItem removed successfully!\n");
+                            itemRemoved = true;
+                            continue;
+                        }
+                    }
+                }
+                
+                serviceStmt.setString(1, itemName);
+                try (ResultSet rs = serviceStmt.executeQuery()) 
+                {
+                    if (rs.next()) 
+                    {
+                        int productId = rs.getInt("product_id");
+     
+
+                        String deleteSql = "DELETE FROM service WHERE product_id = ?";
+                        try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
+                            deleteStmt.setInt(1, productId);
+                            deleteStmt.executeUpdate();
+                            
+                            System.out.println("\n  _____                                   _  ");
+                            System.out.println(" |  __ \\                                 | | ");
+                            System.out.println(" | |__) |___ _ __ ___   _____   _____  __| | ");
+                            System.out.println(" |  _  // _ \\ '_ ` _ \\ / _ \\ \\ / / _ \\/ _` | ");
+                            System.out.println(" | | \\ \\  __/ | | | | | (_) \\ V /  __/ (_| | ");
+                            System.out.println(" |_|  \\_\\___|_| |_| |_|\\___/ \\_/ \\___|\\__,_| ");
+                            System.out.println("\nService removed successfully!\n");
+                            itemRemoved = true;
+                            continue;
+                        }
+                    }
+                }
+                
+                System.out.println("\nError: No item or service found with that name. Please try again.");
+                
+            } 
+            catch (SQLException e) 
+            {
+                System.out.println("Error removing item: " + e.getMessage());
+            }
+        }
+    }
 }
+
+
+
+
+
+
+

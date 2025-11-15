@@ -1,4 +1,3 @@
-
 import java.sql.*;
 import java.util.Scanner;
 import java.text.SimpleDateFormat;
@@ -60,6 +59,35 @@ public class CustomerHelpers{
     }
 
 
+    public static void currentManagerList(Connection conn)
+    {
+        
+        System.out.println();
+        System.out.println("\n\nCurrent Manager names: ");
+
+        String sql = "SELECT * FROM manager";
+        try (Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(sql)) 
+        {
+            int i = 1;
+            while (rs.next()) 
+            {
+                String name = rs.getString("name");
+                String numDot = i + ".";
+                System.out.println(String.format("%-4s%s", numDot, name));
+                i++;
+            }
+        } 
+        catch (SQLException e) 
+        {
+            System.out.println("Error fetching managers: " + e.getMessage());
+        }
+        System.out.println();
+    }
+
+
+
+
 
 
     public static int signUserIn(Connection conn, int userBusinessManager)
@@ -84,6 +112,15 @@ public class CustomerHelpers{
                 customerID = signIn(businessPrompt, conn, sqlQ, "business");
             }
         }
+        else if(userBusinessManager == 3)
+        {
+            while(customerID == -1)
+            {
+                String managerPrompt = "Please enter the FULL NAME of the manager you would like to sign in as from the list above:";
+                String sqlQ = "SELECT manager_id from manager where name = ?";
+                customerID = signInManager(managerPrompt, conn, sqlQ, "manager");
+            }
+        }
 
 
         return customerID;
@@ -102,6 +139,35 @@ public class CustomerHelpers{
                 {
                     int customer_id = rs.getInt("customer_id");
                     return customer_id;
+                } 
+                else {
+                    System.out.println("Error: No matching " + type + " found");
+                    return -1;
+                }
+            }
+        }
+        catch(SQLException e)
+        {
+            System.out.println("Error Developing SQL prepared Statement, please try again");
+            return -1;
+
+        }
+    }
+
+
+    public static int signInManager(String prompt, Connection conn, String sql, String type)
+    {
+        System.out.print(prompt);    
+        String userInput = scan.nextLine();
+        try(PreparedStatement pstmt = conn.prepareStatement(sql))
+        {
+            pstmt.setString(1, userInput);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) 
+                {
+                    int manager_id = rs.getInt("manager_id");
+                    return manager_id;
                 } 
                 else {
                     System.out.println("Error: No matching " + type + " found");
@@ -177,9 +243,10 @@ public class CustomerHelpers{
                     else
                     {
                         System.out.println("\n------------------------Credit Cards on File------------------------");
-                        System.out.println(String.format("%-4s%-20s%-12s%-40s", "No.", "Card Number", "Exp. Date", "Billing Address"));
+                        System.out.println(String.format("%-4s%-8s%-20s%-12s%-40s", "No.", "Pay ID", "Card Number", "Exp. Date", "Billing Address"));
                         int i = 1;
                         do {
+                            int payId = rs.getInt("pay_id");
                             String cardNumber = rs.getString("card_number");
                             String expiry = rs.getString("expiration_date");
                             String billing_address = rs.getString("billing_address");
@@ -196,7 +263,7 @@ public class CustomerHelpers{
                             // Add spaces after commas in billing address
                             String formattedAddress = billing_address.replaceAll(",", ", ");
 
-                            System.out.println(String.format("%-4s%-20s%-12s%-40s", i + ".", cardNumber, formattedExpiry, formattedAddress));
+                            System.out.println(String.format("%-4s%-8d%-20s%-12s%-40s", i + ".", payId, cardNumber, formattedExpiry, formattedAddress));
                             i++;
                         } while(rs.next());
                     }
@@ -216,13 +283,14 @@ public class CustomerHelpers{
                     }
                     else
                     {
-                        System.out.println(String.format("%-4s%-20s%-20s%-20s", "No.", "Account Number", "Bank", "Routing Number"));
+                        System.out.println(String.format("%-4s%-8s%-20s%-20s%-20s", "No.", "Pay ID", "Account Number", "Bank", "Routing Number"));
                         int i = 1;
                         do {
+                            int payId = rs.getInt("pay_id");
                             String accountNumber = rs.getString("account_number");
                             String bankName = rs.getString("bank");
                             String routingNumber = rs.getString("routing_number");
-                            System.out.println(String.format("%-4s%-20s%-20s%-20s", i + ".", accountNumber, bankName, routingNumber));
+                            System.out.println(String.format("%-4s%-8d%-20s%-20s%-20s", i + ".", payId, accountNumber, bankName, routingNumber));
                             i++;
                         } while(rs.next());
                     }
@@ -258,13 +326,14 @@ public class CustomerHelpers{
                     }
                     else
                     {
-                        System.out.println(String.format("%-4s%-20s%-20s%-20s", "No.", "Account Number", "Bank", "Routing Number"));
+                        System.out.println(String.format("%-4s%-8s%-20s%-20s%-20s", "No.", "Pay ID", "Account Number", "Bank", "Routing Number"));
                         int i = 1;
                         do {
+                            int payId = rs.getInt("pay_id");
                             String accountNumber = rs.getString("account_number");
                             String bankName = rs.getString("bank");
                             String routingNumber = rs.getString("routing_number");
-                            System.out.println(String.format("%-4s%-20s%-20s%-20s", i + ".", accountNumber, bankName, routingNumber));
+                            System.out.println(String.format("%-4s%-8d%-20s%-20s%-20s", i + ".", payId, accountNumber, bankName, routingNumber));
                             i++;
                         } while(rs.next());
                     }
@@ -415,7 +484,7 @@ public class CustomerHelpers{
                 financedStatement.setInt(1, userId);
                 try(ResultSet rs = financedStatement.executeQuery())
                 {
-                    System.out.println("\n\n------------------------------Financed Purchases Made------------------------------\n");
+                    System.out.println("\n\n------------------------------Financed Purchases------------------------------\n");
                     if(!rs.next())
                     {
                         System.out.println("No Financed Purchases have been made by this account");
@@ -509,6 +578,44 @@ public class CustomerHelpers{
             {
                 System.out.println("Error Querying for unfinanced transactions");
             }
+
+
+            String financingPaymentsQuery ="WITH payments AS ( SELECT pay_id FROM payment WHERE user_id = ?)SELECT  installment_id, payment_amount, description FROM transaction_for tf JOIN financed_transaction ft ON tf.transaction_id = ft.transaction_id JOIN item i ON i.product_id = ft.product_id WHERE tf.pay_id IN (SELECT pay_id FROM payments)";
+
+            try(PreparedStatement payments_made = conn.prepareStatement(financingPaymentsQuery))
+            {
+                payments_made.setInt(1, userId);
+                try(ResultSet rs = payments_made.executeQuery())
+                {
+                    System.out.println("\n\n------------------------------Financing Payments------------------------------\n");
+                    if(!rs.next())
+                    {
+                        System.out.println("No Financing payments have been made with your payment methods");
+                    }
+                    else
+                    {
+                        System.out.println(String.format("%-10s %-30s %-20s","Payment #", "Item", "Amount" ));
+                        do
+                        {
+                            String description = rs.getString("description");
+                            int installment_id = rs.getInt("installment_id");
+                            double payment_amount = rs.getDouble("payment_amount");
+
+                            System.out.println(String.format("%-10s %-30s $%-18.2f", installment_id, description,payment_amount));
+                        } while(rs.next());
+                    }
+
+                }   
+                catch(SQLException e)
+                {
+                    System.out.println("Error Querying for payments transactions " + e.getMessage());
+                }
+            }
+            catch(SQLException e)
+            {
+                System.out.println("Error Querying for payment transactions " + e.getMessage());
+            }
+
         }
 
 
@@ -693,5 +800,5 @@ public class CustomerHelpers{
         }
         
     }
-}
+}  
 

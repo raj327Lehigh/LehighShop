@@ -42,7 +42,7 @@ public class BusinessCustomer
                     try
                     {
                         conn.setAutoCommit(false);
-                        CustomerHelpers.addCustomerBankAccount(customerID, conn, true);
+                        CustomerHelpers.addCustomerBankAccount(customerID, conn, false);
                         conn.commit();
                     }
                     catch (SQLException e)
@@ -80,4 +80,4 @@ public class BusinessCustomer
             }
         }
     }
-}
+} 

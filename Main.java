@@ -47,7 +47,7 @@ public class Main {
                 }
                 else if(interfaceNum == 3)
                 {
-                    //TODO IMPLEMENT MANAGER INTERFACE 
+                    ManagerInterface.managerInterface(conn);
                 }
             }
             // "The Catalog Interface",
@@ -174,3 +174,4 @@ public class Main {
 
 }
 
+ 

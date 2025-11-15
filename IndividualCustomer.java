@@ -89,7 +89,7 @@ public class IndividualCustomer {
                     try
                     {
                         conn.setAutoCommit(false);
-                        CustomerHelpers.addCustomerBankAccount( userId, conn, isInd);
+                        CustomerHelpers.addCustomerBankAccount(userId, conn, isInd);
                         conn.commit();
                     }
                     catch (SQLException e)
@@ -115,7 +115,6 @@ public class IndividualCustomer {
                             System.out.println("Error entering user bank account info : " + ex.getMessage());
                         }
                     }
-                    break;
                     
                 }
             }
@@ -323,4 +322,4 @@ public class IndividualCustomer {
     }
 
     
-}
+} 
