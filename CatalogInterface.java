@@ -312,6 +312,7 @@ public static void customerInterface(Connection conn)
     String[] catalogOptions = {
         "Make Unfinanced Purchase",
         "Make Financed Purchase",
+        "Make Financed Payment",
         "Surf Catalog",
         "Go Back"
     };
@@ -319,9 +320,9 @@ public static void customerInterface(Connection conn)
     StringBuilder prompt = Main.chooseFromOptions("\nPlease enter a number to choose one of the following options", catalogOptions);
     int entry = -1;
     
-    while(entry != 4)
+    while(entry != 5)
     {
-        entry = Main.getIntInRange(prompt, 1, 4);
+        entry = Main.getIntInRange(prompt, 1, 5);
         
         switch(entry)
         {
@@ -332,6 +333,9 @@ public static void customerInterface(Connection conn)
                 makeFinancedPurchase(conn, customerID);
                 break;
             case 3:
+                makePaymentTowardsFinancing(conn, customerID);
+                break;
+            case 4:
                 System.out.println("Customer Catalog:\n");
                 individualCatalog(conn);
                 break;
@@ -340,7 +344,7 @@ public static void customerInterface(Connection conn)
 }
 
 
-public static int selectCustomerPaymentMethods(int userId,Connection conn, boolean isInd, boolean isFinanced)
+public static int selectCustomerPaymentMethods(int userId, Connection conn, boolean isInd, boolean isFinanced)
 {
         if(isInd)
         {
@@ -394,7 +398,7 @@ public static int selectCustomerPaymentMethods(int userId,Connection conn, boole
 
                     if(!isPresent)
                     {
-                        System.out.println("Error: you do not on a bank account or credit card with that pay_id. Please try again.");
+                        System.out.println("Error: you do not own a bank account or credit card with that pay_id. Please try again.");
                         return -1;
                     }
 
@@ -1045,11 +1049,225 @@ public static int selectCustomerPaymentMethods(int userId,Connection conn, boole
             }
         }
     }
+
+
+public static void makePaymentTowardsFinancing(Connection conn, int customerId)
+{
+    String financedTransQuery = "SELECT ft.transaction_id, i.description, i.price, ft.remaining_balance, ft.date_of_delivery, f.number_installments FROM financed_transaction ft JOIN item i ON ft.product_id = i.product_id JOIN financing f ON ft.plan_id = f.plan_id WHERE ft.customer_id = ? AND ft.remaining_balance > 0 ORDER BY ft.date_of_delivery";
+
+
+    try (PreparedStatement pstmt = conn.prepareStatement(financedTransQuery))
+    {
+        pstmt.setInt(1, customerId);
+        ResultSet rs = pstmt.executeQuery();
+        
+        System.out.println("\n------Here are your current open Financed Transactions------");
+        System.out.printf("%-10s %-35s %-15s %-15s %-20s%n", "Trans ID", "Item", "Total Price", "Balance Owed", "Installments");
+        
+   
+        boolean hasBalance = false;
+        while (rs.next())
+        {
+            hasBalance = true;
+            int transId = rs.getInt("transaction_id");
+            String description = rs.getString("description");
+            double price = rs.getDouble("price");
+            double balance = rs.getDouble("remaining_balance");
+            int numInstallments = rs.getInt("number_installments");
+            
+            System.out.printf("%-10d %-35s $%-14.2f $%-14.2f %-20d%n", transId, description, price, balance, numInstallments);
+        }
+        
+        if (!hasBalance)
+        {
+            System.out.println("You have no outstanding financed purchases. Batman would be impressed!");
+            return;
+        }
+
+        System.out.println();
+    }
+    catch (SQLException e)
+    {
+        System.out.println("Error retrieving financed transactions: " + e.getMessage());
+        return;
+    }
+
+    int transId = -1;
+    double totalPrice = 0;
+    int numInstallments2 = 0;
+    double remainingBalance = 0;
+
+    while(transId < 0)
+    {
+        System.out.print("Enter the Transaction ID you would like to make a payment toward:");
+
+        String checkQuery = "SELECT i.price, f.number_installments, ft.remaining_balance FROM financed_transaction ft JOIN item i ON ft.product_id = i.product_id JOIN financing f ON ft.plan_id = f.plan_id WHERE ft.transaction_id = ? AND ft.customer_id = ? AND ft.remaining_balance > 0";
+            
+        String input = scan.nextLine().trim();
+
+        try
+        {
+            transId = Integer.parseInt(input);
+            if(transId < 0)
+            {
+                System.out.println("Error id cannot be negative");
+                continue;
+            }
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkQuery))
+            {
+                checkStmt.setInt(1, transId);
+                checkStmt.setInt(2, customerId);
+                ResultSet verifyRs = checkStmt.executeQuery();
+                
+                if (!verifyRs.next())
+                {
+                    System.out.println("Invalid transaction ID or no balance remaining. Please try again.");
+                    transId = -1;
+                }
+                else
+                {
+                    totalPrice = verifyRs.getDouble("price");
+                    numInstallments2 = verifyRs.getInt("number_installments");
+                    remainingBalance = verifyRs.getDouble("remaining_balance");
+                }
+            }
+        }
+        catch (NumberFormatException e)
+        {
+            System.out.println("Invalid input. Please enter a valid transaction ID.");
+            transId = -1;
+        }
+        catch (SQLException e)
+        {
+            System.out.println("Error verifying transaction: " + e.getMessage());
+            transId = -1;
+        }
+    }
+
+    double standardInstallment = totalPrice / numInstallments2;
+    int paymentsMadeCount = 0;
+
+    try
+    {
+        String paymentsCountQuery  = "SELECT COUNT(*) as count from payment_made_toward WHERE transaction_id = ?";
+
+        try(PreparedStatement countStmt = conn.prepareStatement(paymentsCountQuery))
+        {
+            countStmt.setInt(1, transId);
+            ResultSet countRs = countStmt.executeQuery();
+            if(countRs.next())
+            {
+                paymentsMadeCount = countRs.getInt("count");
+            }
+        }
+    }
+    catch(SQLException e)
+    {
+        System.out.println("Error counting payments: " + e.getMessage());
+        return;
+    }
+
+    int paymentsRemaining = numInstallments2 - paymentsMadeCount;
+
+
+    double paymentAmount;
+
+    if(paymentsRemaining == 1)
+    {
+        paymentAmount = remainingBalance;
+    }
+    else if(paymentsMadeCount == 0)
+    {
+        double futurePaymentsTotal = standardInstallment * (numInstallments2 - 1);
+        paymentAmount = totalPrice - futurePaymentsTotal;
+    }
+    else
+    {
+
+        paymentAmount = standardInstallment;
+        if(paymentAmount > remainingBalance)
+        {
+            paymentAmount = remainingBalance;
+        }
+        
+    }
+
+    System.out.println("\n\nPayment Summary:");
+    System.out.printf("Total Price of Item: $%.2f%n", totalPrice);
+    System.out.printf("Current Balance: $%.2f%n", remainingBalance);
+    System.out.printf("This Payment Amount: $%.2f%n", paymentAmount);
+    System.out.printf("Balance After Payment: $%.2f%n", remainingBalance - paymentAmount);
+
+    System.out.println();
+
+    int paymentId = -1;
+
+    while(paymentId < 0)
+    {
+        CustomerHelpers.getCustomerPaymentMethods(customerId, conn, true);
+        paymentId = CatalogInterface.selectCustomerPaymentMethods(customerId, conn, true, false);
+    }
+
+
+    try
+    {
+        conn.setAutoCommit(false);
+
+        String insertPaymentQuery = "Insert into transaction_for VALUES (?, ?, ?, ?, ?)";
+        String insertPaymentMadeToward = "Insert into payment_made_toward values (?, ?, ?, ?, ?)";
+
+        try(PreparedStatement insertStmt = conn.prepareStatement(insertPaymentQuery);
+            PreparedStatement insertStmt2 = conn.prepareStatement(insertPaymentMadeToward);
+        )
+        {
+            insertStmt.setInt(1, transId);
+            insertStmt2.setInt(2, transId);
+
+            insertStmt.setInt(2, paymentsMadeCount  + 1);
+            insertStmt2.setInt(3, paymentsMadeCount + 1);
+
+            insertStmt.setDouble(3, paymentAmount);
+            insertStmt2.setDouble(4, paymentAmount);
+
+            insertStmt.setInt(4, paymentsMadeCount + 1);
+            insertStmt2.setInt(5, paymentsMadeCount + 1);
+
+            insertStmt.setInt(5, paymentId);
+            insertStmt2.setInt(1, paymentId);
+
+            insertStmt.executeUpdate();
+            insertStmt2.executeUpdate();
+            conn.commit();
+
+            double newBalance = remainingBalance - paymentAmount;
+
+            System.out.println("  _______ _                 _     __     __         ");
+            System.out.println(" |__   __| |               | |    \\ \\   / /         ");
+            System.out.println("    | |  | |__   __ _ _ __ | | __  \\ \\_/ /__  _   _ ");
+            System.out.println("    | |  | '_ \\ / _` | '_ \\| |/ /   \\   / _ \\| | | |");
+            System.out.println("    | |  | | | | (_| | | | |   <     | | (_) | |_| |");
+            System.out.println("    |_|  |_| |_|\\__,_|_| |_|_|\\_\\    |_|\\___/ \\__,_|");
+
+            System.out.printf("\n\nThank you for your payment! Your remaining balance is %.2f. What would you like to do next?\n", newBalance);
+
+
+        }
+        catch (SQLException e)
+        {
+            conn.rollback();
+            System.out.println("Error processing payment: " + e.getMessage());
+        }
+        finally
+        {
+            conn.setAutoCommit(true);
+        }
+    }
+    catch (SQLException e)
+    {
+        System.out.println("Error managing transaction: " + e.getMessage());
+    }
+    
+
 }
-
-
-
-
-
-
+}
 
